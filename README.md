@@ -34,6 +34,11 @@ PDF input is behind the `detector` crate's `pdf` feature and needs the pdfium sh
 return HTTP 422. The server crate does not forward that feature yet, so enable it by adding `features = ["pdf"]` to the `detector`
 dependency in `crates/server/Cargo.toml`. It compiles but has not been run.
 
+## Benchmark
+
+[BENCHMARK.md](BENCHMARK.md) has the GPU run on public receipt data (`bench/run_benchmark.py`, shipped to a pod via `bench/flatten.py`).
+Short version: near-perfect in-distribution, but the data has format and style shortcuts and the models do not transfer to other document types.
+
 ## Status
 
 - Verified: Rust tests, Rust vs Python score parity on a PNG using a tiny stand-in ONNX model, HTTP endpoints, provenance override, bad-input 422, `train_head.py` on synthetic features.
