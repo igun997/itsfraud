@@ -1,4 +1,4 @@
-"""Upload the release to a Hugging Face model repo (needs a WRITE token: HF_WRITE_TOKEN in env, or run `hf auth login`).
+"""Upload the release to a Hugging Face model repo (needs a WRITE token: HF_WRITE_TOKEN in env, HF_WRITE in .env, or `hf auth login`).
 
   HF_WRITE_TOKEN=... python scripts/push_hf.py --repo igun997/itsfraud-receipt-detector [--private]
 
@@ -7,6 +7,7 @@ the head.json/metrics.json of each version, and v0.1.0/backbone.onnx (DINOv2-bas
 """
 import argparse
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -16,12 +17,22 @@ ROOT = Path(__file__).resolve().parents[1]
 FRONT = "---\nlicense: cc-by-nc-sa-4.0\nlibrary_name: onnx\ntags: [ai-generated-image-detection, receipts, invoices, dinov2]\n---\n\n"
 
 
+def token():
+    if os.environ.get("HF_WRITE_TOKEN"):
+        return os.environ["HF_WRITE_TOKEN"]
+    m = re.search(r'^\s*(?:export\s+)?HF_WRITE(?:_TOKEN)?\s*=\s*["\']?([^"\'\s#]+)', (ROOT / ".env").read_text(), re.M)
+    return m.group(1) if m else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--repo", required=True)
     ap.add_argument("--private", action="store_true")
     a = ap.parse_args()
-    api = HfApi(token=os.environ.get("HF_WRITE_TOKEN") or None)
+    api = HfApi(token=token())
+    role = api.whoami()["auth"]["accessToken"].get("role")
+    if role != "write":
+        raise SystemExit(f"token role is {role!r}, need write")
     api.create_repo(a.repo, repo_type="model", private=a.private, exist_ok=True)
     with tempfile.TemporaryDirectory() as d:
         card = Path(d) / "README.md"
