@@ -76,3 +76,20 @@ mod tests {
         assert_eq!(page_tiles(&small).1, 1);
     }
 }
+
+/// Production preprocessing used when training the head: scale so the long side is 1024 px (Lanczos),
+/// then round-trip through JPEG quality 75 so every input shares one file pipeline. Mirrors `v_norm` in
+/// bench/run_benchmark.py; the resize and the JPEG encoder are not bit-identical to PIL/libjpeg, which the
+/// parity check in the model card quantifies.
+pub fn normalize(img: &RgbImage) -> Result<RgbImage, String> {
+    use image::{codecs::jpeg::JpegEncoder, imageops::FilterType, ExtendedColorType, ImageEncoder};
+    let (w, h) = img.dimensions();
+    let s = 1024.0 / w.max(h) as f64;
+    let (nw, nh) = (((w as f64 * s).round() as u32).max(1), ((h as f64 * s).round() as u32).max(1));
+    let resized = image::imageops::resize(img, nw, nh, FilterType::Lanczos3);
+    let mut buf = Vec::new();
+    JpegEncoder::new_with_quality(&mut buf, 75)
+        .write_image(resized.as_raw(), nw, nh, ExtendedColorType::Rgb8)
+        .map_err(|e| e.to_string())?;
+    Ok(image::load_from_memory_with_format(&buf, image::ImageFormat::Jpeg).map_err(|e| e.to_string())?.to_rgb8())
+}

@@ -66,3 +66,15 @@ def augment(img: Image.Image, rng: random.Random) -> Image.Image:
         buf.seek(0)
         img = Image.open(buf).convert("RGB")
     return img
+
+
+def normalize(img: Image.Image) -> Image.Image:
+    """Production preprocessing (long side 1024 with Lanczos, JPEG q75 round trip); mirrors v_norm in bench/run_benchmark.py
+    and tiles::normalize in the Rust detector."""
+    w, h = img.size
+    s = 1024 / max(w, h)
+    img = img.resize((max(1, round(w * s)), max(1, round(h * s))), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=75)
+    buf.seek(0)
+    return Image.open(buf).convert("RGB")

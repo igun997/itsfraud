@@ -67,3 +67,31 @@ then applied unchanged to every test set. Backbones: DINOv2-small, DINOv2-base, 
 
 Two A100 pods were used at $1.79/hr: a first pod that I terminated after about a minute and a half because the pasted code bundle was corrupted, and the pod that produced these
 results (about 17 minutes). The estimate is from pod create and terminate times, not a billing read. Both pods are terminated; the account has no pods.
+
+## Head-to-head with public AI-image detectors (2026-11-01)
+
+Same 463 held-out receipts as the production head's test split (148 SROIE, 150 CORD, 165 GPT-Image-2 fakes), reproduced by
+`bench/compare_detectors.py` on an A100 (code bundle sha256 prefix `c80e91fd0fc5a750`). Each public detector is run zero-shot with its own preprocessing.
+Test AUC by condition (`norm` = long side 1024 + JPEG 75, `raw` = files as shipped, `pp` = norm + 0.6x downscale + JPEG 50):
+
+| detector | norm | raw | pp |
+|---|---|---|---|
+| itsfraud v0.1.0 (trained on this data) | 1.000 | not computed | 0.9999 |
+| Ateeqq/ai-vs-human-image-detector | 0.924 | 0.920 | 0.871 |
+| umm-maybe/AI-image-detector | 0.605 | 0.595 | 0.581 |
+| Smogy/SMOGY-Ai-images-detector | 0.537 | 0.708 | 0.443 |
+| dima806/ai_vs_human_generated_image_detection | 0.501 | 0.513 | 0.476 |
+| Organika/sdxl-detector | 0.290 | 0.351 | 0.277 |
+| haywoodsloan/ai-image-detector-deploy | 0.220 | 0.710 | 0.087 |
+
+Reading it:
+- Four of six public detectors are at or below chance on receipts (AUC below 0.5 means they score real receipts as more "AI" than the fakes). Two of them score much higher on the raw
+  files than on normalized ones (haywoodsloan 0.71 vs 0.22, Smogy 0.71 vs 0.54), consistent with reacting to file format and compression rather than to generation artifacts.
+- The best public detector, Ateeqq, ranks reasonably (AUC 0.92) but is badly calibrated for receipts: at its default 0.5 cutoff it flags 52% of real receipts (69% of SROIE scans), and when its threshold is set to 5% false positives on the
+  validation split it catches 57% of the fakes.
+- Smogy, Organika, umm-maybe and haywoodsloan output near-zero "AI" probability for almost everything at 0.5, so they detect almost nothing at their default settings.
+- This shows off-the-shelf photo/art detectors are unsuitable for receipts. It does not show that our head generalizes; see the limits in [MODEL_CARD.md](MODEL_CARD.md), in particular the 20.2% false-positive rate on CORD when CORD was held out of training.
+- Smaug-AI-Image-Detector was left out: its config exposes only `LABEL_0` / `LABEL_1`, so which label means AI could not be determined. The raw per-image scores and JSON were not archived (only this table).
+
+Note on metadata: the GPT-Image-2 files in this dataset carry OpenAI's C2PA/IPTC AI-generated tag (5 of 5 sampled; the real receipts sampled carry none). Every number in this file for the trained heads and for
+the public detectors under `norm` and `pp` is measured on re-encoded images, which strips that tag; the `raw` condition keeps the files as shipped and is not evidence of detection ability.

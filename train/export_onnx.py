@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from transformers import AutoModel
 
-from extract_features import MODEL_ID
+from extract_features import MODEL_ID as DEFAULT_MODEL_ID
 
 
 class Cls(torch.nn.Module):
@@ -21,9 +21,10 @@ class Cls(torch.nn.Module):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=Path("../artifacts/backbone.onnx"))
+    ap.add_argument("--model-id", default=DEFAULT_MODEL_ID)
     args = ap.parse_args()
 
-    model = Cls(AutoModel.from_pretrained(MODEL_ID)).eval()
+    model = Cls(AutoModel.from_pretrained(args.model_id)).eval()
     dummy = torch.randn(2, 3, 224, 224)
     torch.onnx.export(
         model, dummy, str(args.out), input_names=["pixel_values"], output_names=["cls"],

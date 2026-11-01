@@ -1,0 +1,122 @@
+{
+ "A_without_cord": {
+  "C": 0.001,
+  "thr_fpr1": -0.24848401546478271,
+  "thr_fpr5": -1.65396249294281,
+  "test_norm": {
+   "n": 313,
+   "auc": 1.0,
+   "auc_ci95": [
+    1.0,
+    1.0
+   ],
+   "tpr@fpr1thr": 1.0,
+   "fpr@fpr1thr": 0.0,
+   "tpr@fpr5thr": 1.0,
+   "fpr@fpr5thr": 0.0473
+  },
+  "test_pp": {
+   "n": 313,
+   "auc": 0.9992,
+   "auc_ci95": [
+    0.9973,
+    1.0
+   ],
+   "tpr@fpr1thr": 0.9636,
+   "fpr@fpr1thr": 0.0068,
+   "tpr@fpr5thr": 0.9879,
+   "fpr@fpr5thr": 0.0203
+  },
+  "cord_unseen": {
+   "n": 1000,
+   "fpr_at_fpr1_thr": 0.202,
+   "fpr_at_fpr5_thr": 0.606,
+   "auc_vs_fake_test": 0.9987515151515152
+  }
+ },
+ "B_final": {
+  "C": 0.001,
+  "thr_fpr1": -0.8820075392723083,
+  "thr_fpr5": -1.9313383102416992,
+  "test_norm": {
+   "n": 463,
+   "auc": 1.0,
+   "auc_ci95": [
+    1.0,
+    1.0
+   ],
+   "tpr@fpr1thr": 1.0,
+   "fpr@fpr1thr": 0.0067,
+   "tpr@fpr5thr": 1.0,
+   "fpr@fpr5thr": 0.057
+  },
+  "test_pp": {
+   "n": 463,
+   "auc": 0.9999,
+   "auc_ci95": [
+    0.9997,
+    1.0
+   ],
+   "tpr@fpr1thr": 0.9939,
+   "fpr@fpr1thr": 0.0101,
+   "tpr@fpr5thr": 1.0,
+   "fpr@fpr5thr": 0.0201
+  },
+  "per_source": {
+   "cord": {
+    "thr_fpr1": {
+     "tpr": null,
+     "fpr": 0.0,
+     "n_pos": 0,
+     "n_neg": 150
+    },
+    "thr_fpr5": {
+     "tpr": null,
+     "fpr": 0.006666666666666667,
+     "n_pos": 0,
+     "n_neg": 150
+    }
+   },
+   "gpt-image-2": {
+    "thr_fpr1": {
+     "tpr": 1.0,
+     "fpr": null,
+     "n_pos": 165,
+     "n_neg": 0
+    },
+    "thr_fpr5": {
+     "tpr": 1.0,
+     "fpr": null,
+     "n_pos": 165,
+     "n_neg": 0
+    }
+   },
+   "sroie": {
+    "thr_fpr1": {
+     "tpr": null,
+     "fpr": 0.013513513513513514,
+     "n_pos": 0,
+     "n_neg": 148
+    },
+    "thr_fpr5": {
+     "tpr": null,
+     "fpr": 0.10810810810810811,
+     "n_pos": 0,
+     "n_neg": 148
+    }
+   }
+  }
+ },
+ "counts": {
+  "sroie/train": 690,
+  "sroie/val": 148,
+  "sroie/test": 148,
+  "gpt-image-2/train": 766,
+  "gpt-image-2/test": 165,
+  "gpt-image-2/val": 164,
+  "cord/train": 700,
+  "cord/test": 150,
+  "cord/val": 150
+ },
+ "model_version": "0.1.0"
+}

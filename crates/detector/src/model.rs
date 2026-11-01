@@ -12,6 +12,19 @@ struct Head {
     coef: Vec<f32>,
     intercept: f32,
     threshold: f32,
+    #[serde(default)]
+    threshold_fpr5: Option<f32>,
+    #[serde(default)]
+    model_version: String,
+    #[serde(default)]
+    preprocess: String,
+}
+
+impl Head {
+    /// Heads trained on normalized images (long side 1024, JPEG q75) declare it in `preprocess`.
+    fn normalizes(&self) -> bool {
+        self.preprocess.starts_with("long side 1024")
+    }
 }
 
 pub struct Detector {
@@ -28,6 +41,9 @@ pub struct Verdict {
     pub logit: f32,
     /// Decision threshold on the logit (chosen for a low false-positive rate on real files).
     pub threshold: f32,
+    /// Looser operating point (about 5% false positives on validation data) when the head provides one.
+    pub threshold_fpr5: Option<f32>,
+    pub model_version: String,
     pub pages: usize,
     pub tiles: usize,
     pub signals: Vec<Signal>,
@@ -61,6 +77,13 @@ impl Detector {
         let mut data = Vec::new();
         let mut n = 0usize;
         for p in &pages {
+            let normalized;
+            let p = if self.head.normalizes() {
+                normalized = tiles::normalize(p).map_err(Error::Decode)?;
+                &normalized
+            } else {
+                p
+            };
             let (d, c) = tiles::page_tiles(p);
             data.extend(d);
             n += c;
@@ -72,6 +95,8 @@ impl Detector {
             probability: 1.0 / (1.0 + (-logit).exp()),
             logit,
             threshold: self.head.threshold,
+            threshold_fpr5: self.head.threshold_fpr5,
+            model_version: self.head.model_version.clone(),
             pages: pages.len(),
             tiles: n,
             signals,

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import onnxruntime as ort
 
-from common import load_pages, page_tiles, to_tensor_array
+from common import load_pages, normalize, page_tiles, to_tensor_array
 
 
 def main():
@@ -17,7 +17,8 @@ def main():
 
     head = json.loads((args.artifacts / "head.json").read_text())
     sess = ort.InferenceSession(str(args.artifacts / "backbone.onnx"))
-    tiles = [t for p in load_pages(args.file) for t in page_tiles(p)]
+    norm = head.get("preprocess", "").startswith("long side 1024")
+    tiles = [t for p in load_pages(args.file) for t in page_tiles(normalize(p) if norm else p)]
     emb = sess.run(None, {"pixel_values": to_tensor_array(tiles)})[0]
     z = (emb - np.array(head["mean"])) / np.array(head["scale"])
     logit = float((z @ np.array(head["coef"]) + head["intercept"]).mean())

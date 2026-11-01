@@ -1,0 +1,7 @@
+target
+data
+artifacts
+models/**/*.onnx
+.git
+.venv
+**/__pycache__
