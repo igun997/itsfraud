@@ -1,0 +1,8 @@
+/target
+/data/*
+!/data/README.md
+/artifacts/*
+!/artifacts/.gitkeep
+__pycache__/
+.venv/
+*.npz

@@ -1,0 +1,17 @@
+[package]
+name = "detector"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+# PDF rendering needs the pdfium shared library at runtime (https://github.com/bblanchon/pdfium-binaries)
+pdf = ["dep:pdfium-render"]
+
+[dependencies]
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff"] }
+ndarray = "0.17.2"
+ort = "2.0.0-rc.15"
+pdfium-render = { version = "*", optional = true }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"

@@ -1,0 +1,9 @@
+torch>=2.3
+transformers>=4.44
+pillow>=10.0
+pypdfium2>=4.30
+numpy>=1.26
+scikit-learn>=1.4
+onnx>=1.16
+onnxruntime>=1.18
+tqdm
