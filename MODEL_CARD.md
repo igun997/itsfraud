@@ -49,9 +49,11 @@ Full table, other conditions and caveats: [BENCHMARK.md](BENCHMARK.md).
 
 ## Limits (read these)
 
-1. **One generator.** Every fake is from GPT-Image-2. The model has never seen output from Gemini, Flux, Stable Diffusion, Midjourney or any editing tool, and detectors of this kind usually degrade on unseen generators. Untested.
+1. **One generator.** Every fake is from GPT-Image-2. A first spot check on a single photo-style fake you supplied (a crumpled receipt photo from another generator, metadata stripped) was **missed**: logit -4.8 against a threshold of -0.9, i.e. it looked more real than most real receipts. One image proves little, but it is the failure mode this limit predicts: the model learned "clean GPT render vs scan or photo" and has no coverage of photo-style fakes. The model has never seen output from Gemini, Flux, Stable Diffusion, Midjourney or any editing tool, and detectors of this kind usually degrade on unseen generators. Untested.
 2. **Fake-vs-real source shortcut.** Real receipts are scans and phone photos; fakes are clean renders in one style. The model may partly detect "scan vs render". Real and fake files were put through one pipeline (normalization), which removes the file-format shortcut but not the style gap.
 3. **New real sources raise false alarms.** Trained without CORD, the same model flagged **20.2%** of CORD receipts at its 1% threshold and 60.6% at its 5% threshold (ranking stayed good: AUC 0.999 against the fakes). Thresholds do not transfer to a new kind of real receipt. Before deployment, calibrate the threshold on a few hundred of your own genuine receipts, or retrain with them.
+   A later check on 40 real invoice/receipt phone photos from [Francisco-Cruz/InvoicesReceiptsPT](https://huggingface.co/datasets/Francisco-Cruz/InvoicesReceiptsPT) (a source the model never saw) raised **0 false alarms** (median logit -5.8), so the false-alarm problem is not universal.
+   The flip side is that the model treats phone photos as strongly real, which fits the missed photo-style fake in limit 1.
 4. **The comparison is not like-for-like.** Our head was trained on this distribution; the public detectors were not. It shows that off-the-shelf detectors do not work on text-heavy receipts, not that ours would beat a detector trained on the same data.
 5. **AI edits are not tested.** Inpainted numbers or dates on a real receipt (the more common fraud) are a different task; earlier published results show generic detectors fail on them.
 6. **Single run, one split**, no seed-to-seed variance. A test AUC of 1.000 with this sample size means "no errors observed", not a guarantee.
@@ -75,3 +77,20 @@ cargo build --release
 ITSFRAUD_ARTIFACTS=models/v0.1.0 ./target/release/itsfraud scan receipt.jpg
 docker build -t itsfraud . && docker run --rm -p 8080:8080 -v "$PWD/models/v0.1.0:/models:ro" itsfraud
 ```
+
+## v0.3.0-podfit (head only, same DINOv2-base backbone as v0.1.0)
+
+Head refit on a Runpod A100 (`bench/extract_sources.py`) from public sets (SROIE, CORD, InvoicesReceiptsPT, TextRich GPT-Image-2), gated Scam-AI sets (gpt4o-receipt, AIForge authentic) and ~220 fakes generated with Z-Image-Turbo and SDXL (photo, scan and invoice styles). AIForge AI-edited images are used for testing only.
+
+Leave-one-generator-out (held-out fake source, share flagged at the 1% / 5% FPR thresholds; real-image FPR on held-out test is 3-7% / 12-16%, above nominal):
+
+| Held out | @1% | @5% |
+|---|---|---|
+| GPT-4o receipts | 100% | 100% |
+| GPT-Image-2 | 71% | 92% |
+| Z-Image-Turbo | 62% | 92% |
+| SDXL | 0% | 6% |
+
+Known misses: a photo-style Gemini fake supplied by the author is still scored real, AI-inpainted edits are flagged only 5-14%, and an unseen generator (SDXL) is essentially not detected. Treat results on generators outside the training set as unproven.
+
+**Licence caveat:** the v0.2.0 and v0.3.0 heads were fitted on Scam-AI datasets licensed CC-BY-NC-SA-4.0 (non-commercial). Treat those heads as non-commercial; v0.1.0 does not use them. The TextRich dataset states no licence.

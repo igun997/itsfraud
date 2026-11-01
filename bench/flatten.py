@@ -3,7 +3,7 @@
 Strips comments/docstrings so it fits in a single environment variable on a pod. Prints its
 length and sha256 prefix so the pod can verify an intact copy.
 
-  python bench/flatten.py out.py [run_benchmark|train_final]
+  python bench/flatten.py out.py [run_benchmark|train_final|compare_detectors|gen_fakes|extract_sources]
 """
 import ast
 import hashlib
@@ -21,10 +21,15 @@ common = re.sub(r'^"""[\s\S]*?"""\n', "", common, count=1)
 common = common.replace("import io\nimport random\nfrom pathlib import Path\n\nimport numpy as np\nfrom PIL import Image\n", "")
 anchor = re.search(r"^Image\.MAX_IMAGE_PIXELS", bench, re.M)
 bench = bench[: anchor.start()] + common + "\n" + bench[anchor.start() :]
+if entry == "gen_fakes":
+    # standalone bundle: shared preprocessing (train/common.py) + the generator script, without run_benchmark
+    full_common = (ROOT / "train/common.py").read_text()
+    gen = (ROOT / "bench/gen_fakes.py").read_text().replace("    from common import augment, normalize, page_tiles, to_tensor_array\n", "")
+    bench = full_common + "\n" + gen
 tree = ast.parse(bench)
 
-CHAIN = {"run_benchmark": [], "train_final": ["train_final"], "compare_detectors": ["train_final", "compare_detectors"]}[entry]
-LOCAL = {"run_benchmark", "train_final", "compare_detectors"}
+CHAIN = {"run_benchmark": [], "train_final": ["train_final"], "compare_detectors": ["train_final", "compare_detectors"], "gen_fakes": [], "extract_sources": ["gen_fakes", "extract_sources"]}[entry]
+LOCAL = {"run_benchmark", "train_final", "compare_detectors", "extract_sources", "gen_fakes", "common"}
 
 
 def drop_main_guard(body):
@@ -33,7 +38,7 @@ def drop_main_guard(body):
 
 if CHAIN:
     for i, mod in enumerate(CHAIN):
-        extra = ast.parse((ROOT / f"bench/{mod}.py").read_text())
+        extra = ast.parse((ROOT / f"bench/{mod}.py").read_text().replace("    from common import augment, normalize, page_tiles, to_tensor_array\n", ""))
         extra.body = [n for n in extra.body if not (isinstance(n, ast.ImportFrom) and n.module in LOCAL)]
         tree.body = drop_main_guard(tree.body) + extra.body
     tree.body = [ast.parse("import hashlib").body[0]] + tree.body

@@ -30,9 +30,10 @@ curl -F file=@receipt.pdf localhost:8080/detect
 ```
 
 `ITSFRAUD_ARTIFACTS` points at the folder with `backbone.onnx` and `head.json` (default `./artifacts`).
-PDF input is behind the `detector` crate's `pdf` feature and needs the pdfium shared library on the library path; without it PDFs
-return HTTP 422. The server crate does not forward that feature yet, so enable it by adding `features = ["pdf"]` to the `detector`
-dependency in `crates/server/Cargo.toml`. It compiles but has not been run.
+PDF input needs the pdfium shared library at runtime and the `pdf` feature: `cargo build --release --features pdf`, with `libpdfium.so` on `LD_LIBRARY_PATH`.
+The crate is pinned to pdfium API level 7881, which works with pdfium builds 7881 and newer; the library bundled in the `pypdfium2` Python package (build 8076) works.
+Without the feature or library, PDFs return HTTP 422. The Docker image does not include pdfium, so it serves images only.
+`python scripts/check_pdfs.py --pdfium-dir <dir with libpdfium.so>` scores everything under `tests/pdfs` and `data/` and summarizes by folder (`fake/` expected AI, `real/` expected genuine).
 
 ## Model, benchmark and comparison
 
@@ -42,6 +43,6 @@ Short version: near-perfect on the test split and far better than public detecto
 ## Status
 
 - Verified: Rust unit tests; real DINOv2-base head trained and evaluated on GPU (see BENCHMARK.md and MODEL_CARD.md); ONNX export matches PyTorch to 1.6e-5; Rust and Python scores agree on 15 sample receipts (verdicts identical, logit difference 0.12 on average); HTTP endpoints, provenance override, bad-input 422.
-- Not verified: PDF rendering (compiles, never run), unseen generators, AI-edited receipts, the Docker image at runtime, any non-receipt document.
+- PDF rendering works (13 held-out GPT-Image-2 fake PDFs all caught, 7 public real PDFs and your real files mostly passed: one A4-layout public real PDF was a false alarm). Not verified: unseen generators beyond a single missed spot check, AI-edited receipts, any non-receipt document (the Docker image was run and answers image requests; it has no PDF support).
 - Preprocessing is duplicated in `train/common.py` (PIL) and `crates/detector/src/tiles.rs` (Rust); keep them equivalent. The Rust resize and JPEG encoder are not bit-identical to PIL/libjpeg.
 - Do not treat v0.1.0 as proven: it was trained on one generator and its threshold does not transfer to new real-receipt sources (MODEL_CARD.md, "Limits").

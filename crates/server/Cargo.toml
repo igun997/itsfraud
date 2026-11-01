@@ -7,6 +7,10 @@ edition = "2021"
 name = "itsfraud"
 path = "src/main.rs"
 
+[features]
+# PDF input: needs the pdfium shared library at runtime (libpdfium.so on the library path)
+pdf = ["detector/pdf"]
+
 [dependencies]
 axum = { version = "0.8.9", features = ["multipart"] }
 detector = { version = "0.1.0", path = "../detector" }

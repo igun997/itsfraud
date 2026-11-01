@@ -11,7 +11,8 @@ pdf = ["dep:pdfium-render"]
 image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp", "bmp", "tiff"] }
 ndarray = "0.17.2"
 ort = "2.0.0-rc.15"
-pdfium-render = { version = "*", optional = true }
+# pdfium API level pinned to 7881 so it works with pdfium builds 7881 and newer (e.g. the library bundled in pypdfium2 5.x, build 8076)
+pdfium-render = { version = "0.9.5", optional = true, default-features = false, features = ["pdfium_7881", "image_latest", "thread_safe"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 thiserror = "2.0.21"
